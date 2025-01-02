@@ -1,7 +1,7 @@
 import multer from "multer";
 import path from "path"
 const upload = multer(
-    { dest: 'uploads/',
+    { dest: 'uploads',
     limits:{fieldSize:759476803 *1000000}, 
     storage : multer.diskStorage({
         destination: function (req, file, cb) {
