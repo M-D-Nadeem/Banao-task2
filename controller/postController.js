@@ -103,15 +103,13 @@ const updatePost = async (req, res) => {
 
     if (req.file) {
       try {
-        const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: 'uploads'
-        });
+        const result = await cloudinary.uploader.upload(req.file.path);
 
         if (result) {
           post.image = result.secure_url;
         }
 
-        await fs.rm(req.file.path);
+        // await fs.rm(req.file.path);
       } catch (err) {
         return res.status(500).json({
           message: "Error uploading image",
