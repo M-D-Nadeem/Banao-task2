@@ -7,6 +7,8 @@ dotenv.config;
 const cookieOption = {
   maxAge: 24 * 60 * 60 * 1000,
   httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'None',
   secure: true,
 };
 const register = async (req, res) => {
@@ -64,6 +66,7 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   const { username, password } = req.body;
+  
   if (!username || !password) {
     res.status(404).send({
       message: "All the fields are required",
@@ -72,6 +75,8 @@ const login = async (req, res) => {
   }
   try {
     const user = await User.findOne({ username }).select("+password");
+  
+    
     if (user) {
       const passwordsMatched = await bcrypt.compare(password, user.password);
       if (passwordsMatched) {
@@ -113,6 +118,26 @@ const login = async (req, res) => {
   }
 };
 
+const logOut=async (req,res,next)=>{
+  
+  
+  try{
+  res.cookie("token","null",{
+      secure:true,
+      maxAge:0,
+      httpOnly:true
+  })
+  return res.status(200).json({
+      success:true,
+      message:"Log out sucessful"
+  })
+}
+catch(err){
+  console.log("ERROR in log out");
+  return next(new AppError(err.message,500))
+}
+}
+
 const forgotPassword = async (req, res) => {
   const { username, newPassword } = req.body;
   try {
@@ -133,4 +158,4 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-export { forgotPassword, login, register };
+export { forgotPassword, login, register ,logOut};
