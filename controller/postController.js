@@ -5,12 +5,8 @@ import fs from "fs/promises"
 dotenv.config;
 
 const addPost = async (req, res, next) => {
-  console.log(req.body);
-  
   const { title, content } = req.body;
-  console.log(title);
   
-
   if (!title || !content) {
     return res.status(400).json({
       message: "All fields are required",
@@ -22,16 +18,30 @@ const addPost = async (req, res, next) => {
 
   if (req.file) {
     try {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'uploads'
-      });
+     
+      const uploadToCloudinary = () =>
+        new Promise((resolve, reject) => {
+          const stream = cloudinary.v2.uploader.upload_stream(
+            { folder: "uploads" }, 
+            (error, result) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(result);
+              }
+            }
+          );
 
-      if (result) {
-        image = result.secure_url;
-      }
+          stream.end(req.file.buffer);
+        });
 
-      await fs.rm(req.file.path);
+      const result = await uploadToCloudinary(); 
+      image = result.secure_url;
+      console.log(image);
+      
     } catch (err) {
+      console.log(err);
+      
       return res.status(500).json({
         message: "Error uploading image",
         error: err.message,
@@ -63,7 +73,6 @@ const addPost = async (req, res, next) => {
     });
   }
 };
-
 const getAllPost = async (req, res) => {
   try {
     const posts = await Post.find({}).populate("author").sort({ createdAt: -1 });
@@ -94,6 +103,7 @@ const updatePost = async (req, res) => {
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
+
     if (post.author !== req.user.username) {
       return res.status(403).json({ message: "Unauthorized to update this post" });
     }
@@ -103,15 +113,24 @@ const updatePost = async (req, res) => {
 
     if (req.file) {
       try {
-        const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: 'uploads'
-        });
+        const uploadToCloudinary = () =>
+          new Promise((resolve, reject) => {
+            const stream = cloudinary.v2.uploader.upload_stream(
+              { folder: "uploads" }, 
+              (error, result) => {
+                if (error) {
+                  reject(error);
+                } else {
+                  resolve(result);
+                }
+              }
+            );
 
-        if (result) {
-          post.image = result.secure_url;
-        }
+            stream.end(req.file.buffer);
+          });
 
-        await fs.rm(req.file.path);
+        const result = await uploadToCloudinary();
+        post.image = result.secure_url; 
       } catch (err) {
         return res.status(500).json({
           message: "Error uploading image",
